@@ -1,5 +1,0 @@
-"slide" "orient" "n_tags" "tags"
-0 "H" 3 "cat"
-1 "H" 3 "selfie"
-2 "H" 3 "garden"
-3 "H" 3 "garden"
