@@ -1,7 +1,6 @@
 library(data.table)
 
 
-
 get_counts <- function(filename) {
   
   input_file <- file.path('data', filename)
@@ -21,7 +20,7 @@ get_counts <- function(filename) {
   
   counts[order(N, decreasing = T)]
   
-  write.table(counts, file.path('counts', filename), row.names = F)
+  write.table(counts, file.path('processed', 'counts', filename), row.names = F)
 }
 
 files <- list.files('data', pattern = 'txt$')
