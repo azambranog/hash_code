@@ -29,6 +29,7 @@ vertical_distances <- function(filename) {
   for (i in 1:(nrow(v_slides)-1)) {
     for (j in (i+1):nrow(v_slides)) {
       ix <- ix+1
+      message(ix, ' ', i, ' ', j)
       inter <- length(intersect(v_slides[i, tags][[1]], 
                                 v_slides[j, tags][[1]]))
       
