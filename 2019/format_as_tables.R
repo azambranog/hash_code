@@ -20,3 +20,17 @@ format_as_table <- function(filename) {
  
   return(data)
 }
+
+
+expand_tags <- function(data) {
+  all_tags <- mclapply(as.list(1:nrow(data)), function(i) {
+    x <- data.table(
+    slide = data[i, slide], tag = unlist(data[i, tags][[1]])
+    )
+    return(x)
+  }, mc.cores = 6)
+
+  all_tags <- rbindlist(all_tags)
+
+  return(all_tags)
+}
