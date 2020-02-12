@@ -3,6 +3,25 @@ source('scorer.R')
 library(igraph)
 library(parallel)
 
+f_score <- function(x, y) {
+  tx <- x[[1]]
+  ty <- y[[1]]
+  
+  a <- length(setdiff(tx, ty))
+  b <- length(setdiff(ty, tx))
+  c <- length(intersect(ty, tx))
+  return(min(a,b,c))
+}
+fast_score <- function(result, data) {
+  res <- head(data.table(x=as.numeric(result), y=shift(as.numeric(result), -1)), -1)
+  
+  res[, tagsx := data[res[, x + 1], tags]]
+  res[, tagsy := data[res[, y + 1], tags]]
+  res[, score := f_score(tagsx, tagsy), by = seq_len(nrow(res))]
+  return(res[, sum(score)])
+}
+
+
 ### Build a graph and then do a random walk by using igraph, then remove duplicates in the walk
 
 f <- 'b_lovely_landscapes.txt'
@@ -34,13 +53,15 @@ pp <- pp[[1]]
 gg <- graph(pp, directed = F)
 rm(pp)
 
-s <- as.character(sample(data[, slide], 1))
-w <- random_walk(gg, s, 10000000)
-result <- unique(names(w))
-score <- scorer(result, data)
-message(score)
+for (ui in 1:100) {
+  s <- as.character(sample(data[, slide], 1))
+  w <- random_walk(gg, s, 10000000)
+  result <- unique(names(w))
+  
+  score <- fast_score(result, data)
+  message(score)
+}
 
-s <- as.character(sample(data[, slide], 2))
-shortest_paths(gg, s[1], s[2])
+
 
 
