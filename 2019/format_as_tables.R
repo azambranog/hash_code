@@ -1,4 +1,5 @@
 library(data.table)
+library(parallel)
 
 
 format_as_table <- function(filename) {
@@ -28,7 +29,7 @@ expand_tags <- function(data) {
     slide = data[i, slide], tag = unlist(data[i, tags][[1]])
     )
     return(x)
-  }, mc.cores = 6)
+  }, mc.cores = 3)
 
   all_tags <- rbindlist(all_tags)
 
