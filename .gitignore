@@ -43,4 +43,5 @@ vignettes/*.pdf
 
 2019/idea_1/*
 2020/output/*
+2020/clean/*
 *.idea
