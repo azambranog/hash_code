@@ -1,3 +1,5 @@
+results/
+
 ### Python template
 __pycache__/
 *.py[cod]
