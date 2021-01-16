@@ -1,6 +1,6 @@
 from itertools import accumulate
 import random
-from os import  path
+from os import path
 
 
 class Solver:
@@ -11,9 +11,9 @@ class Solver:
         self.time_left = None
         self.out_libs = []
         self.out_books = []
+        self.signing = {}
         self.signing_time_left = 0
-        self.signing = 0
-        self.empty_libs = []
+        self.sending = {}
         self.sent_books = set()
 
         # code for each line as list element
@@ -26,8 +26,8 @@ class Solver:
         self.time_left = self.D
         # nice code to read a line of ints as list
         self.books = list(map(int, data.pop(0).split()))
-        self.libs = []
-        for i in range(self.L):
+        self.libs = {}
+        for ii in range(self.L):
             n_books, sign, ships = map(int, data.pop(0).split())
             lib = {'n_books': n_books, 'sign': sign, 'ships': ships}
 
@@ -42,12 +42,11 @@ class Solver:
 
             lib.update({'books': books, 'book_scores': book_scores})
 
-            self.libs.append(lib)
+            self.libs.update({ii: lib})
         return
 
     def update_future_steps(self):
-
-        for lib in self.libs:
+        def helper(lib):
             # nice code to group lists into smaller ones
             n = lib['ships']  # size of smaller group
             step_books = [lib['books'][i:i + n] for i in range(0, len(lib['books']), n)]
@@ -58,41 +57,44 @@ class Solver:
             acc_step_score = list(accumulate(step_score))
             lib.update({'step_books': step_books, 'step_score': step_score, 'acc_step_score': acc_step_score})
 
+        for lib in self.libs.values():
+            helper(lib)
+        for lib in self.sending.values():
+            helper(lib)
+        for lib in self.signing.values():
+            helper(lib)
+
     def find_promising_lib(self):
 
-        available_libs = list(set(range(len(self.libs))) - set(self.out_libs))
-        if len(available_libs) == 0:
+        if len(self.libs) == 0:
             return None
 
         self.update_future_steps()
 
         days_left = self.time_left
-        scores = []
-        signs = []
+        scores = {}
+        signs = {}
 
-        for lib in available_libs:
-            last_possible = days_left - self.libs[lib]['ships'] - 1
-            if last_possible < 0 or len(self.libs[lib]['acc_step_score']) == 0:
-                scores.append(-1)
-                signs.append(self.D)
+        for i, lib in self.libs.items():
+            last_possible = days_left - lib['sign'] - 1
+            if last_possible < 0 or len(lib['acc_step_score']) == 0:
                 continue
-            ix = min(last_possible, len(self.libs[lib]['acc_step_score']) - 1)
-            scores.append(self.libs[lib]['acc_step_score'][ix])
-            signs.append(self.libs[lib]['sign'])
-
+            ix = min(last_possible, len(lib['acc_step_score']) - 1)
+            scores.update({i: lib['acc_step_score'][ix]})
+            signs.update({i: lib['sign']})
 
         # code to find indices of the maximum
-        i_max = [i for i, j in enumerate(scores) if j == max(scores)]
+        best_libs = [i for i, j in scores.items() if j == max(scores.values())]
         # If several have maximum value we go for the one that signs faster
         # if several sign fast, do random
         # TODO improve this strategy
-        signs = list(map(signs.__getitem__, i_max))
-        i_min = random.choice([i for i, j in enumerate(signs) if j == min(signs)])
-
-        return available_libs[i_max[i_min]]
+        fastest_signs = [k for k in signs if k in best_libs]
+        result = random.choice(fastest_signs)
+        return result
 
     def remove_books(self, book_list):
-        for lib in self.libs:
+
+        def _helper(lib, book_list):
             for b in book_list:
                 try:
                     ix = lib['books'].index(b)
@@ -101,38 +103,60 @@ class Solver:
                 except ValueError:
                     next
 
+        for lib in self.libs.values():
+            _helper(lib, book_list)
+        for lib in self.sending.values():
+            _helper(lib, book_list)
+        for lib in self.signing.values():
+            _helper(lib, book_list)
+
         self.update_future_steps()
+
+    def remove_libs_with_no_chance(self):
+        to_pop = []
+        for i, lib in self.libs.items():
+            if lib['sign'] >= self.time_left:
+                to_pop.append(i)
+
+        [self.libs.pop(x) for x in to_pop]
 
     def solve(self, checkpoint=None):
         if checkpoint is None:
             checkpoint = int(self.D / 10) + 1
 
-        all_libs_taken = False
         while self.time_left > 0:
-            if self.signing_time_left == 0 and not all_libs_taken:
-                curr_lib = self.find_promising_lib()
-                self.signing = curr_lib
-                if curr_lib is None:
-                    all_libs_taken = True
-                else:
-                    self.signing_time_left = self.libs[curr_lib]['sign']
-                    self.out_libs.append(curr_lib)
-                    self.out_books.append([])
 
-            # send books
-            sending_libs = set(self.out_libs) - {self.signing}
-            sending_libs = list(sending_libs - set(self.empty_libs))
+            sending_libs = list(self.sending.keys())
             random.shuffle(sending_libs)
 
             for sending_lib in sending_libs:
-                try:
-                    x = self.libs[sending_lib]['step_books'].pop(0)
+                if len(self.sending[sending_lib]['step_books']) > 0:
+                    x = self.sending[sending_lib]['step_books'].pop(0)
                     sending_lib_index = self.out_libs.index(sending_lib)
                     self.out_books[sending_lib_index] += x
                     self.sent_books = self.sent_books.union(set(x))
                     self.remove_books(x)
-                except IndexError:
-                    self.empty_libs.append(sending_lib)
+                    #in case the lib is empty after sendinf this batch
+                    if len(self.sending[sending_lib]['step_books']) == 0:
+                        self.sending.pop(sending_lib)
+                else:
+                    #can happen that a lib is empty after doing the remove list operation
+                    self.sending.pop(sending_lib)
+
+
+            # shall we sign a library?
+            if self.signing_time_left == 0:
+                # make signing lib part of sending libs
+                self.sending.update(self.signing)
+                self.signing = {}
+                self.remove_libs_with_no_chance()
+                if not len(self.libs) == 0:
+                    #get another lib
+                    lx = self.find_promising_lib()
+                    self.signing = {lx: self.libs.pop(lx)}
+                    self.signing_time_left = self.signing[lx]['sign']
+                    self.out_libs.append(lx)
+                    self.out_books.append([])
 
             self.time_left -= 1
             self.signing_time_left -= 1
@@ -161,10 +185,10 @@ class Solver:
         if self.out_file is None:
             self.out_file = path.basename(self.in_file)[0] + '_' + str(score) + '.txt'
 
-        file = open(path.join('results', 'solver1', self.out_file), 'w+')
-        file.write(f'Score = {score}')
-        file.write(f'Out_libs = {self.out_libs}')
-        file.write(f'Out_books = {self.out_books}')
+        file = open(path.join('results', 'solver2', self.out_file), 'w+')
+        file.write(f'Score = {score}\n')
+        file.write(f'Out_libs = {self.out_libs}\n')
+        file.write(f'Out_books = {self.out_books}\n')
         file.close()
 
 
