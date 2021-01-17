@@ -1,8 +1,7 @@
 import os
 import re
 
-files = os.listdir(os.path.join('old_solvers/results', 'solver1')) + os.listdir(os.path.join('old_solvers/results', 'solver2')) + \
-        os.listdir(os.path.join('old_solvers/results', 'solverd'))
+files = os.listdir(os.path.join('results'))
 
 problems = [f[0] for f in files]
 scores = [int(re.sub(r'^.*_(.*)\.txt$', '\\1', f)) for f in files]
