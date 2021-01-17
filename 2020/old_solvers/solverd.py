@@ -170,7 +170,7 @@ class Solver:
 
 
 if __name__ == '__main__':
-    sol = Solver('data/d_tough_choices.txt')
+    sol = Solver('../data/d_tough_choices.txt')
     sol.solve()
 
 

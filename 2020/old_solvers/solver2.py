@@ -193,7 +193,7 @@ class Solver:
 
 
 if __name__ == '__main__':
-    sol = Solver('data/a_example.txt')
+    sol = Solver('../data/a_example.txt')
     sol.solve()
 
 
