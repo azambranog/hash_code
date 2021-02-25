@@ -45,3 +45,8 @@ vignettes/*.pdf
 2020/output/*
 2020/clean/*
 *.idea
+*/data/*
+*/results/*
+*/venv/*
+*.zip
+*.pyc
