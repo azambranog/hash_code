@@ -5,11 +5,11 @@ import numpy as np
 
 
 class BaseSolver:
-    def __init__(self, file_path, out_file=None):
-        self.in_file = file_path
+    def __init__(self, problem, out_file=None):
+        self.in_file = f"data/{problem}.txt"
         self.out_file = out_file
 
-        file = open(file_path, mode='r')
+        file = open(self.in_file, mode='r')
         data = file.read().split('\n')
         file.close()
 

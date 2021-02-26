@@ -23,9 +23,13 @@ class Solver(BaseSolver):
 
 if __name__ == '__main__':
     parser = AP(description='solveproblem')
-    parser.add_argument('input_file')
+    parser.add_argument('-p', dest="problem", default='a,b,c,d,e,f', help='problem a,b,c,d,e,f')
     args = parser.parse_args()
+    probs = args.problem.split(',')
 
-    s = Solver(args.input_file)
-    s.solve()
-    s.write_result()
+    for p in probs:
+        print(f'solving {p}')
+        s = Solver(p)
+        s.solve()
+        s.write_result()
+    print('Done')
